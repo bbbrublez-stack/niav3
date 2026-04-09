@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru" data-t="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NIA — AI Assistant</title>
+<meta name="description" content="Умный AI-ассистент нового поколения. Задай вопрос, загрузи изображение или попроси нарисовать картинку."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─── */
+:root{
+  --bg:#111111;
+  --bg2:#1a1a1a;
+  --bg3:#242424;
+  --b1:rgba(255,255,255,.07);
+  --b2:rgba(255,255,255,.13);
+  --b3:rgba(255,255,255,.22);
+  --tx:#f0f0f0;
+  --tx2:#888888;
+  --tx3:#444444;
+  --r:14px;
+}
+[data-t="light"]{
+  --bg:#f5f5f5;
+  --bg2:#ffffff;
+  --bg3:#ebebeb;
+  --b1:rgba(0,0,0,.07);
+  --b2:rgba(0,0,0,.13);
+  --b3:rgba(0,0,0,.22);
+  --tx:#111111;
+  --tx2:#666666;
+  --tx3:#cccccc;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--tx);
+  display:flex;flex-direction:column;
+  height:100dvh;
+  transition:background .2s,color .2s;
+}
+
+/* ─── HEADER ─── */
+header{
+  height:50px;display:flex;align-items:center;
+  padding:0 18px;border-bottom:1px solid var(--b1);
+  flex-shrink:0;gap:8px;
+}
+.hspace{flex:1}
+.hbtn{
+  background:transparent;border:none;color:var(--tx2);cursor:pointer;
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;flex-shrink:0;
+}
+.hbtn:hover{background:var(--bg3);color:var(--tx)}
+.hbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ─── MESSAGES ─── */
+#msgs{
+  flex:1;overflow-y:auto;
+  padding:0 0 8px;
+  display:flex;flex-direction:column;
+  scrollbar-width:thin;
+  scrollbar-color:var(--bg3) transparent;
+}
+#msgs::-webkit-scrollbar{width:3px}
+#msgs::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+
+/* ─── EMPTY STATE ─── */
+#empty{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;
+  flex:1;padding:32px 24px;min-height:60%;
+}
+.e-title{
+  font-family:'Libre Baskerville',serif;
+  font-size:42px;font-weight:400;font-style:italic;
+  color:var(--tx);line-height:1;margin-bottom:12px;
+  letter-spacing:-.02em;
+}
+.e-sub{
+  font-size:14px;color:var(--tx2);font-weight:300;
+  margin-bottom:36px;letter-spacing:.02em;
+}
+.starters{
+  display:flex;flex-direction:column;gap:8px;
+  width:100%;max-width:380px;
+}
+.s{
+  background:var(--bg2);border:1px solid var(--b2);
+  border-radius:var(--r);padding:11px 15px;
+  text-align:left;cursor:pointer;
+  font-size:13.5px;color:var(--tx2);
+  font-family:'DM Sans',sans-serif;font-weight:300;
+  transition:all .16s;
+  display:flex;align-items:center;gap:10px;
+}
+.s:hover{background:var(--bg3);border-color:var(--b3);color:var(--tx);transform:translateX(2px)}
+.si{font-size:15px;flex-shrink:0;line-height:1}
+
+/* ─── ROWS ─── */
+.row{
+  padding:16px 18px;
+  max-width:700px;width:100%;margin:0 auto;
+  border-bottom:1px solid var(--b1);
+  animation:fin .18s ease both;
+}
+.row:last-child{border-bottom:none}
+@keyframes fin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* user row */
+.row.u{
+  display:flex;justify-content:flex-end;
+  border-bottom:none;
+  padding:12px 18px;
+}
+.ubub{
+  background:var(--bg3);border:1px solid var(--b2);
+  border-radius:18px 18px 4px 18px;
+  padding:10px 15px;max-width:78%;
+  font-size:15px;line-height:1.65;font-weight:300;color:var(--tx);
+}
+.ubub img{max-width:100%;max-height:240px;border-radius:10px;display:block;margin-bottom:6px}
+
+/* ai row */
+.row.a .albl{
+  font-family:'Libre Baskerville',serif;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--tx3);font-style:italic;
+  margin-bottom:9px;font-weight:400;
+}
+.row.a .atxt{
+  font-size:15px;line-height:1.78;color:var(--tx);
+  font-weight:300;white-space:pre-wrap;word-break:break-word;
+}
+.row.a .atxt.err{color:#cc4444}
+
+/* typing dots */
+.dots{display:flex;gap:4px;padding:4px 0}
+.d{width:5px;height:5px;border-radius:50%;background:var(--tx3);
+  animation:dd 1.1s ease-in-out infinite}
+.d:nth-child(2){animation-delay:.16s}
+.d:nth-child(3){animation-delay:.32s}
+@keyframes dd{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-5px);opacity:1;background:var(--tx2)}}
+
+/* generated image */
+.gimg{
+  margin-top:14px;border-radius:var(--r);overflow:hidden;
+  border:1px solid var(--b2);display:inline-block;max-width:100%;
+}
+.gimg img{display:block;max-width:100%;max-height:360px}
+.gicap{
+  font-size:11px;color:var(--tx3);padding:6px 11px;
+  background:var(--bg2);border-top:1px solid var(--b1);
+}
+
+/* ─── INPUT ─── */
+.ishell{
+  padding:10px 18px 14px;flex-shrink:0;
+  border-top:1px solid var(--b1);
+}
+.ibox{
+  max-width:700px;margin:0 auto;
+  background:var(--bg2);border:1px solid var(--b2);
+  border-radius:16px;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+}
+.ibox:focus-within{
+  border-color:var(--b3);
+  box-shadow:0 0 0 3px rgba(128,128,128,.08);
+}
+#prev{display:none;padding:9px 13px 0;align-items:center;gap:8px}
+#prev.on{display:flex}
+#prev img{height:50px;border-radius:8px;border:1px solid var(--b2)}
+.rmprev{
+  background:var(--bg3);border:none;color:var(--tx2);
+  width:17px;height:17px;border-radius:50%;cursor:pointer;font-size:10px;
+  display:flex;align-items:center;justify-content:center;
+  margin-left:-10px;margin-top:-17px;align-self:flex-start;flex-shrink:0;
+}
+.irow{display:flex;align-items:flex-end;padding:9px 11px;gap:7px}
+#fi{display:none}
+.ibtn{
+  background:transparent;border:none;color:var(--tx2);cursor:pointer;
+  width:31px;height:31px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .14s;
+}
+.ibtn:hover{background:var(--bg3);color:var(--tx)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#inp{
+  flex:1;background:transparent;border:none;outline:none;resize:none;
+  color:var(--tx);font-family:'DM Sans',sans-serif;
+  font-size:15px;font-weight:300;line-height:1.5;
+  max-height:120px;min-height:23px;padding:3px 0;
+}
+#inp::placeholder{color:var(--tx3)}
+#go{
+  width:31px;height:31px;border-radius:7px;border:none;cursor:pointer;
+  background:var(--tx);color:var(--bg);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .14s;
+}
+#go:hover{opacity:.8;transform:scale(1.05)}
+#go:disabled{opacity:.25;cursor:not-allowed;transform:none}
+#go svg{width:13px;height:13px;stroke:currentColor;fill:none;
+  stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.note{
+  text-align:center;font-size:11px;color:var(--tx3);
+  margin-top:7px;max-width:700px;margin-left:auto;margin-right:auto;
+  letter-spacing:.01em;
+}
+@media(max-width:560px){
+  .e-title{font-size:32px}
+  .row,.row.u{padding:12px 14px}
+  .ubub{max-width:92%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hspace"></div>
+  <!-- New chat -->
+  <button class="hbtn" onclick="reset()" title="Новый чат">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <!-- Theme toggle -->
+  <button class="hbtn" id="tb" onclick="theme()" title="Тема">
+    <svg id="mico" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg id="sico" style="display:none" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="5"/>
+      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+    </svg>
+  </button>
+</header>
+
+<div id="msgs">
+  <div id="empty">
+    <div class="e-title">Спроси</div>
+    <div class="e-sub">AI-ассистент · текст, изображения, картинки</div>
+    <div class="starters">
+      <div class="s" onclick="use('Нарисуй ночной город в дождь, минималистичный стиль')">
+        <span class="si">🎨</span>Нарисовать картинку
+      </div>
+      <div class="s" onclick="use('Напиши короткое стихотворение о тишине')">
+        <span class="si">✍️</span>Написать текст
+      </div>
+      <div class="s" onclick="use('Придумай 5 идей для онлайн-бизнеса без вложений')">
+        <span class="si">💡</span>Идеи для бизнеса
+      </div>
+      <div class="s" onclick="use('Объясни как работает нейросеть простыми словами')">
+        <span class="si">🔬</span>Объяснить тему
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ishell">
+  <div class="ibox">
+    <div id="prev">
+      <img id="pt" src="" alt=""/>
+      <button class="rmprev" onclick="rmImg()">×</button>
+    </div>
+    <div class="irow">
+      <label for="fi" class="ibtn" title="Прикрепить изображение">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </label>
+      <input type="file" id="fi" accept="image/*"/>
+      <textarea id="inp" rows="1" placeholder="Напиши сообщение…"></textarea>
+      <button id="go" onclick="send()" title="Отправить">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="note">Ответы могут содержать ошибки — проверяйте важную информацию.</div>
+</div>
+
+<script>
+// ════ НАСТРОЙКИ ════════════════════════════════
+const SYSTEM = `Ты умный, полезный AI-ассистент.
+Помогаешь с любыми вопросами: отвечаешь, пишешь тексты, анализируешь изображения, помогаешь с кодом.
+Не называй себя Claude, Llama, Groq или любым другим именем модели — ты просто безымянный ассистент.
+Отвечай на языке пользователя. Пиши чётко и по делу.`;
+// ═══════════════════════════════════════════════
+
+const msgs = document.getElementById('msgs');
+const inp  = document.getElementById('inp');
+const gb   = document.getElementById('go');
+const fi   = document.getElementById('fi');
+const prev = document.getElementById('prev');
+const pt   = document.getElementById('pt');
+const em   = document.getElementById('empty');
+
+let hist    = [];
+let pendImg = null;
+
+// textarea auto-grow
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+});
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+// image attach
+fi.addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { pendImg = ev.target.result; pt.src = pendImg; prev.classList.add('on'); };
+  r.readAsDataURL(f);
+});
+function rmImg() { pendImg = null; pt.src = ''; prev.classList.remove('on'); fi.value = ''; }
+
+// starters
+function use(t) { inp.value = t; inp.dispatchEvent(new Event('input')); inp.focus(); }
+
+// theme toggle
+function theme() {
+  const dark = document.documentElement.dataset.t === 'dark';
+  document.documentElement.dataset.t = dark ? 'light' : 'dark';
+  document.getElementById('mico').style.display = dark ? 'none' : '';
+  document.getElementById('sico').style.display = dark ? ''     : 'none';
+}
+
+// new chat
+function reset() {
+  hist = [];
+  msgs.innerHTML = '';
+  msgs.appendChild(em);
+  em.style.display = 'flex';
+  inp.value = ''; inp.style.height = 'auto'; rmImg();
+}
+
+// detect image generation intent
+function wantsPic(t) {
+  return /нарисуй|нарисуйте|создай (картинку|изображение)|сгенерируй|изобрази|draw |paint |generate image/i.test(t);
+}
+
+async function send() {
+  const txt = inp.value.trim();
+  if (!txt && !pendImg) return;
+  if (gb.disabled) return;
+
+  em.style.display = 'none';
+
+  // build message content
+  let content;
+  if (pendImg) {
+    const b64  = pendImg.split(',')[1];
+    const mime = pendImg.split(';')[0].split(':')[1];
+    content = [
+      { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
+      ...(txt ? [{ type: 'text', text: txt }] : [])
+    ];
+  } else {
+    content = txt;
+  }
+
+  addU(txt, pendImg);
+  inp.value = ''; inp.style.height = 'auto';
+  const ci = pendImg; rmImg();
+  gb.disabled = true;
+
+  hist.push({ role: 'user', content });
+
+  const tr = addTyp();
+  const needPic = wantsPic(txt) && !ci;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: hist, system: SYSTEM })
+    });
+
+    const data = await res.json();
+    tr.remove();
+
+    if (!res.ok || data.error) {
+      addA(data.error || `Ошибка ${res.status}`, true);
+    } else {
+      const reply = data.text || 'Не удалось получить ответ.';
+      hist.push({ role: 'assistant', content: reply });
+      const ar = addA(reply);
+
+      if (needPic) {
+        const t2 = addTypInRow(ar);
+        try {
+          const ir = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: txt })
+          });
+          t2.remove();
+          if (ir.ok) { const d = await ir.json(); addPic(ar, d.url, txt); }
+        } catch(_) { t2.remove(); }
+      }
+    }
+  } catch(err) {
+    tr.remove();
+    addA('Ошибка соединения. Проверь интернет и попробуй снова.', true);
+  }
+
+  gb.disabled = false;
+  inp.focus();
+}
+
+function mk(t, c) { const e = document.createElement(t); if(c) e.className=c; return e; }
+
+function addU(txt, img) {
+  const row = mk('div','row u');
+  const b   = mk('div','ubub');
+  if (img) { const i = mk('img'); i.src = img; b.appendChild(i); }
+  if (txt) { const s = mk('span'); s.textContent = txt; b.appendChild(s); }
+  row.appendChild(b); msgs.appendChild(row); sc();
+}
+
+function addA(txt, err) {
+  const row = mk('div','row a');
+  const lbl = mk('div','albl'); lbl.textContent = 'ответ';
+  const t   = mk('div','atxt'+(err?' err':'')); t.textContent = txt;
+  row.appendChild(lbl); row.appendChild(t);
+  msgs.appendChild(row); sc(); return row;
+}
+
+function addTyp() {
+  const row = mk('div','row a');
+  const lbl = mk('div','albl'); lbl.textContent = 'ответ';
+  const d   = mk('div','dots');
+  d.innerHTML='<div class="d"></div><div class="d"></div><div class="d"></div>';
+  row.appendChild(lbl); row.appendChild(d);
+  msgs.appendChild(row); sc(); return row;
+}
+
+function addTypInRow(row) {
+  const d = mk('div','dots');
+  d.innerHTML='<div class="d"></div><div class="d"></div><div class="d"></div>';
+  row.appendChild(d); sc(); return d;
+}
+
+function addPic(row, url, alt) {
+  const w   = mk('div','gimg');
+  const img = mk('img'); img.src=url; img.alt=alt; img.onload=sc;
+  const cap = mk('div','gicap'); cap.textContent='↑ изображение по запросу';
+  w.appendChild(img); w.appendChild(cap); row.appendChild(w); sc();
+}
+
+function sc() { msgs.scrollTo({ top: msgs.scrollHeight, behavior:'smooth' }); }
+</script>
+</body>
+</html>
