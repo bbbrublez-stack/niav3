@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   // - Для изображений: llama-3.2-11b-vision-preview (поддерживает vision)
   // - Для текста: llama-3.3-70b-versatile (мощная, 70B параметров)
   const model = hasImage
-    ? 'llama-3.2-11b-vision-preview'
+    ? 'llama-3.2-11b-vision-instant'
     : 'llama-3.3-70b-versatile';
 
   const apiMessages = [
